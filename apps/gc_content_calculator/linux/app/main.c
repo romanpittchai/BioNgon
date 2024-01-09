@@ -17,7 +17,6 @@ int main(int argc, char *argv[])
 
     TObject text_struct;
     init_struct(&text_struct);
-    text_struct.redraw_requested = 1;
 
     char path[PATH_MAX];
 

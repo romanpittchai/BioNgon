@@ -30,7 +30,6 @@ typedef struct SObject {
     char table_name[32];
     char path_to_interface[PATH_MAX];
     char path_to_db_dir[PATH_MAX];
-    int redraw_requested;
 } TObject;
 
 #endif // STRUCTURES_H_INCLUDED
