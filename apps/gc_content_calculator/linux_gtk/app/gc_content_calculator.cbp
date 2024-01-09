@@ -39,6 +39,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="about.h" />
+		<Unit filename="graph.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="graph.h" />
 		<Unit filename="interface_functions.c">
 			<Option compilerVar="CC" />
 		</Unit>
