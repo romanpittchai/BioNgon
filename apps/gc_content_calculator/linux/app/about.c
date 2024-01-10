@@ -11,6 +11,7 @@ void about_program(GtkWidget *widget,  TObject *text_struct)
     char about[1024];
     snprintf(
         about, sizeof(about),
+        "V. 1.01\n\n"
         "\tThis is a simple program "
         "for counting nucleotides (GC content calculator)."
         "It is a freely distributed software. "
@@ -34,7 +35,12 @@ void about_program(GtkWidget *widget,  TObject *text_struct)
         "delete the last 10 records from the database.\n"
         "Clear DB - completely clear the database.\n\n"
         "Other:\n"
-        "About - information about the program.\n"
+        "Graph - Build a diagram based on the received data.\n"
+        "About - information about the program.\n\n"
+        "Bottom buttons:\n"
+        "Run - Make a calculation.\n"
+        "Download to DB - Make an entry in the database.\n"
+        "Exit - Exit the program.\n"
     );
 
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(

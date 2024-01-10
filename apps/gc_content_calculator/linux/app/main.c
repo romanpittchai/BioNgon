@@ -60,10 +60,12 @@ int main(int argc, char *argv[])
 
         gtk_init(&argc, &argv);
         GtkBuilder *builder = gtk_builder_new();
-        //gtk_builder_add_from_file(builder, text_struct.path_to_interface, NULL);
+        gtk_builder_add_from_file(builder, text_struct.path_to_interface, NULL);
 
-        // You can uncomment for development on CodeBlocks
+        /*
+            // You can uncomment for development on CodeBlocks
             gtk_builder_add_from_file(builder, "interface/interface_en.glade", NULL);
+        */
 
         free(path_to_top_dir);
 

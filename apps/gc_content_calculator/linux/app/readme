@@ -1,10 +1,16 @@
+V. 1.01
+
 BioNgon - in the future, an expandable project, the task of which is to create simple, free tools for tasks related to biology and activities related to the field of biology. The project is developing and I hope it will benefit all those who are interested in this benefit. 
 Url - https://github.com/romanpittchai/BioNgon
 
-You have downloaded the source code of a small program called GC Content Calculator. Maybe everything in this program is not so perfect, but once you have downloaded it, then you need it. The program is written in the C programming language using GTK+ and sqlite3 database sources. Now you need to install the program. In this case, assemble a binary file from the source code and use it directly for your needs. This is done quite easily if you have already installed all the necessary packages and libraries that will be needed to build the program. You also need to install the make utility, There is also a very simple Makefile in the source archive, and that's what the make utility is for. After opening the terminal, you should go directly to the source folder and type "make" (without quotes, of course). Next, if you have all the necessary dependencies installed, the program will be compiled, and in the source folder you will have a folder named "gc_content_calculator", which will contain a binary file and a folder with the interface, as well as a file run.sh with which you can run the program. You can also open a binary (also known as an executable) file using the terminal. In addition, you can move the folder anywhere and create a link to the executable file on the desktop.
+You have downloaded the source code of a small program called GC Content Calculator. Perhaps everything in this program is not so perfect, but once you have downloaded it, it means that you need it. The program is written in the C programming language using the sqlite3 database sources. GTK+ was used as a graphical shell, and the cairo library was used to be able to render the graph. Now you need to install the program. In this case, build a binary file from the source code and use it directly for your needs. This is done quite easily if you have already installed all the necessary packages and libraries that you will need to build the program. You also need to install the make utility, there is also a very simple Makefile in the source archive, and that is what the make utility is designed for. After opening the terminal, you should go directly to the source folder and type "make" (without quotes, of course). Next, if you have all the necessary dependencies installed, the program will be compiled, and in the source folder you will have a folder named "gc_content_calculator", which will contain a binary file and a folder with the interface, as well as a file run.sh with which you can launch the program (by double-clicking on it). You can also open a binary file (also known as an executable file) using a terminal. In addition, you can move the folder to any place you would like.
 
 And yes, you can delete the source folder and move the build folder to any location on your computer.
 
-There is also a test file named "test_dna" in the source folder.
+The source folder also has the name of the test file "test_dna.txt ".
 
-Additional dependencies are installed mainly from the operating system repositories using "apt" or "apt-get". (For example: sudo apt-get install build-essential libgtk-3-dev).
+Additional dependencies are installed mainly from the operating system repository using "apt" or "apt-get" (in other versions of Linux, this can be done differently). For example, you will most likely have to install some libraries: "sudo apt-get install build-essential libgtk-3-dev" or "sudo apt-get install libcairo2-dev".
+
+Note: The name of the data file must not contain spaces.
+
+
