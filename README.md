@@ -10,6 +10,7 @@ The project BioNgon in the future, an expandable project, the task of which is t
 For testing, data obtained in the public domain was used (source: Institute of Genetics, University of California, Santa Cruz).
 
 - Linux
+
 A small program implemented in the C programming language, GTK+ graphical shell, cairo library and sqlite3 source code. In addition to the source code of the program itself, the repository also has a simple makefile for the convenience of building the program, as well as a service file (`gc_content_calculator.cbp`) for convenient operation in the CodeBlocks IDE. There is a file with the interface in a separate folder (created in Glade).
 
 The result of the calculation:
