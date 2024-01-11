@@ -16,10 +16,12 @@ A small program implemented in the C programming language, GTK+ graphical shell,
 The result of the calculation:
 
 ```
-Filename: dna.txt
+Filename: Homo_sapiens.GRCh38.dna.chromosome.1.fa
+
+File header: 1 dna:chromosome chromosome:GRCh38:1:1:248956422:1 REF
 
 Date of processing:
-13:27 - 10.01.2024
+10:13 - 11.01.2024
 
 A - 933 - 20,30%
 U - 0 - 0,00%

@@ -37,6 +37,10 @@ void init_struct(TObject *text_struct)
         text_struct->array_number_of_nucleotides[i] = 0;
         text_struct->array_percent_of_nucleotides[i] = 0.0;
     }
+    char empty[13] = "Empty_header\0";
+    for (size_t i = 0; i < 14; i++) {
+        text_struct->header_buffer[i] = empty[i];
+    }
 }
 
 

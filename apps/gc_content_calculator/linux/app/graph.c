@@ -31,7 +31,7 @@ void draw_callback(GtkWidget *widget, cairo_t *cr, gpointer data)
     cairo_paint(cr);
 
     // Normalize the height of the columns to the height of the widget
-    double normalize_factor = 200.0;
+    double normalize_factor = 180.0;
 
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(
         GTK_TEXT_VIEW(text_struct->text_field)
@@ -44,6 +44,7 @@ void draw_callback(GtkWidget *widget, cairo_t *cr, gpointer data)
         buffer, &start, &end, FALSE
     );
     char name[4096];
+    char file_header[MAX_HEADER_LENGTH];
     int hour, minute, day, month, year;
     long int nucleotide_counts[5];
     float nucleotide_percent[5];
@@ -52,7 +53,8 @@ void draw_callback(GtkWidget *widget, cairo_t *cr, gpointer data)
 
     int result = sscanf(
         text,
-        "Filename: %s\n\n"
+        "Filename: %[^\n]\n\n"
+        "File header: %[^\n]\n\n"
         "Date of processing:\n%02d:%02d - %02d.%02d.%d\n\n"
         "A - %ld - %f%%\n"
         "U - %ld - %f%%\n"
@@ -65,6 +67,7 @@ void draw_callback(GtkWidget *widget, cairo_t *cr, gpointer data)
         "Number of GC content in characters - %ld\n"
         "Number of GC content in percent - %f%%",
         &name,
+        &file_header,
         &hour, &minute, &day, &month, &year,
         &nucleotide_counts[0], &nucleotide_percent[0], // &a_count, &a_percent
         &nucleotide_counts[1], &nucleotide_percent[1], // &u_count, &u_percent
@@ -77,7 +80,7 @@ void draw_callback(GtkWidget *widget, cairo_t *cr, gpointer data)
         &total_char[3], // &gc_content_characters
         &gc_content_percent
     );
-    if (result != 21) {
+    if (result != 22) {
         g_free(text);
         char error[] = "Error! Check the data.";
         cairo_set_font_size(cr, 15.0);
@@ -103,9 +106,14 @@ void draw_callback(GtkWidget *widget, cairo_t *cr, gpointer data)
         cairo_move_to(cr, 30, height_y - 100 - 25);
         cairo_show_text(cr, g_strdup_printf("%s: %s", filename, name));
 
-        char date[] = "Date of processing";
+        char file_header_name[] = "File header";
         cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_move_to(cr, 30, height_y - 100);
+        cairo_show_text(cr, g_strdup_printf("%s: %s", file_header_name, file_header));
+
+        char date[] = "Date of processing";
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_move_to(cr, 30, height_y - 75);
         cairo_show_text(
             cr, g_strdup_printf(
                 "%s: %0.2d:%0.2d - %0.2d.%0.2d.%0.2d",
@@ -245,7 +253,7 @@ void save_graph(GtkWidget *widget, gint response_id, TObject *text_struct)
             char *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
             // Create an image and save it to a file
-            cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 800, 530);
+            cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 800, 550);
             cairo_t *cr = cairo_create(surface);
             draw_callback(widget, cr, text_struct); // Calling the surface rendering function
             cairo_surface_write_to_png(surface, filename); // Saving the image to a file

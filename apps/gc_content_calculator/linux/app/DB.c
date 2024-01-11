@@ -75,7 +75,8 @@ void last_ten_iter(GtkWidget *widget,  TObject *text_struct)
     snprintf(
         sql, sizeof(sql),
         "SELECT "
-        "filename, hour,"
+        "filename, "
+        "file_header, hour,"
         "minute, day, "
         "month,year, "
         "a_count, g_count, "
@@ -147,6 +148,7 @@ void append_result_to_string(sqlite3_stmt *stmt, GString *result)
         result,
         "*********************\n\n"
         "Filename: %s\n\n"
+        "File header: %s\n\n"
         "Date of processing:\n%s:%s - %s.%s.%s\n\n"
         "A - %s - %s%%\n"
         "U - %s - %s%%\n"
@@ -160,19 +162,20 @@ void append_result_to_string(sqlite3_stmt *stmt, GString *result)
         "Number of GC content in percent - %s%%\n\n"
         "*********************\n\n",
         sqlite3_column_text(stmt, 0),
-        sqlite3_column_text(stmt, 1), sqlite3_column_text(stmt, 2),
-        sqlite3_column_text(stmt, 3), sqlite3_column_text(stmt, 4),
-        sqlite3_column_text(stmt, 5), sqlite3_column_text(stmt, 6),
-        sqlite3_column_text(stmt, 11), sqlite3_column_text(stmt, 10),
-        sqlite3_column_text(stmt, 15), sqlite3_column_text(stmt, 7),
-        sqlite3_column_text(stmt, 12), sqlite3_column_text(stmt, 8),
+        sqlite3_column_text(stmt, 1),
+        sqlite3_column_text(stmt, 2), sqlite3_column_text(stmt, 3),
+        sqlite3_column_text(stmt, 4), sqlite3_column_text(stmt, 5),
+        sqlite3_column_text(stmt, 6), sqlite3_column_text(stmt, 7),
+        sqlite3_column_text(stmt, 12), sqlite3_column_text(stmt, 11),
+        sqlite3_column_text(stmt, 16), sqlite3_column_text(stmt, 8),
         sqlite3_column_text(stmt, 13), sqlite3_column_text(stmt, 9),
-        sqlite3_column_text(stmt, 14),
-        sqlite3_column_text(stmt, 16),
+        sqlite3_column_text(stmt, 14), sqlite3_column_text(stmt, 10),
+        sqlite3_column_text(stmt, 15),
         sqlite3_column_text(stmt, 17),
         sqlite3_column_text(stmt, 18),
         sqlite3_column_text(stmt, 19),
-        sqlite3_column_text(stmt, 20)
+        sqlite3_column_text(stmt, 20),
+        sqlite3_column_text(stmt, 21)
     );
 }
 
@@ -205,6 +208,7 @@ static int callback(void *data, int argc, char **argv, char **azColName)
         text_struct->result,
         "*********************\n\n"
         "Filename: %s\n\n"
+        "File header: %s\n\n"
         "Date of processing:\n%s:%s - %s.%s.%s\n\n"
         "A - %s - %s%%\n"
         "U - %s - %s%%\n"
@@ -218,17 +222,18 @@ static int callback(void *data, int argc, char **argv, char **azColName)
         "Number of GC content in percent - %s%%\n\n"
         "*********************\n\n",
         argv[0],
-        argv[1], argv[2], argv[3], argv[4], argv[5],
-        argv[6], argv[11],
-        argv[10], argv[15],
+        argv[1],
+        argv[2], argv[3], argv[4], argv[5], argv[6],
         argv[7], argv[12],
+        argv[11], argv[16],
         argv[8], argv[13],
         argv[9], argv[14],
-        argv[16],
+        argv[10], argv[15],
         argv[17],
         argv[18],
         argv[19],
-        argv[20]
+        argv[20],
+        argv[21]
     );
 
     gchar *utf8_count_out = convert_to_utf8(text_struct->result->str, "UTF-8");
@@ -314,7 +319,8 @@ void last_iter(GtkWidget *widget,  TObject *text_struct)
     snprintf(
         sql, sizeof(sql),
         "SELECT "
-        "filename, hour, "
+        "filename, "
+        "file_header, hour, "
         "minute, day, "
         "month, year, "
         "a_count, g_count, "
@@ -382,6 +388,7 @@ void download_db(GtkWidget *widget,  TObject *text_struct)
         buffer, &start, &end, FALSE
     );
     char name[4096];
+    char file_header[MAX_HEADER_LENGTH];
     int hour, minute, day, month, year;
     long int a_count, g_count, c_count, t_count, u_count;
     float a_percent, g_percent, c_percent, t_percent, u_percent;
@@ -390,7 +397,8 @@ void download_db(GtkWidget *widget,  TObject *text_struct)
 
     int result = sscanf(
         text,
-        "Filename: %s\n\n"
+        "Filename: %[^\n]\n\n"
+        "File header: %[^\n]\n\n"
         "Date of processing:\n%02d:%02d - %02d.%02d.%d\n\n"
         "A - %ld - %f%%\n"
         "U - %ld - %f%%\n"
@@ -403,6 +411,7 @@ void download_db(GtkWidget *widget,  TObject *text_struct)
         "Number of GC content in characters - %ld\n"
         "Number of GC content in percent - %f%%",
         &name,
+        &file_header,
         &hour, &minute, &day, &month, &year,
         &a_count, &a_percent,
         &u_count, &u_percent,
@@ -415,7 +424,7 @@ void download_db(GtkWidget *widget,  TObject *text_struct)
         &gc_content_characters,
         &gc_content_percent
     );
-    if (result != 21) {
+    if (result != 22) {
         g_free(text);
         char count_error[256];
         snprintf(
@@ -449,6 +458,7 @@ void download_db(GtkWidget *widget,  TObject *text_struct)
         sql, sizeof(sql),
         "INSERT INTO %s ("
             "filename, "
+            "file_header, "
             "hour, minute, day, month, year, "
             "a_count, u_count, g_count, c_count, t_count, "
             "a_percent, u_percent, g_percent, c_percent, t_percent, "
@@ -456,7 +466,7 @@ void download_db(GtkWidget *widget,  TObject *text_struct)
             "Number_of_GC_content_in_characters, Number_of_GC_content_in_percent"
         ") "
         "VALUES ("
-            "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
+            "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
         ")",
         text_struct->table_name
     );
@@ -504,26 +514,27 @@ void download_db(GtkWidget *widget,  TObject *text_struct)
     snprintf(str_gc_content_percent, sizeof(str_gc_content_percent), "%0.2f", gc_content_percent);
 
     sqlite3_bind_text(stmt, 1, name, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, str_hour, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 3, str_minute, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 4, str_day, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 5, str_month, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 6, str_year, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 7, str_a_count, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 8, str_u_count, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 9, str_g_count, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 10, str_c_count, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 11, str_t_count, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 12, str_a_percent, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 13, str_u_percent, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 14, str_g_percent, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 15, str_c_percent, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 16, str_t_percent, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 17, str_total_characters, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 18, str_atgcu, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 19, str_other_characters, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 20, str_gc_content_characters, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 21, str_gc_content_percent, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, file_header, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, str_hour, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 4, str_minute, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 5, str_day, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 6, str_month, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 7, str_year, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 8, str_a_count, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 9, str_u_count, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 10, str_g_count, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 11, str_c_count, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 12, str_t_count, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 13, str_a_percent, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 14, str_u_percent, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 15, str_g_percent, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 16, str_c_percent, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 17, str_t_percent, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 18, str_total_characters, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 19, str_atgcu, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 20, str_other_characters, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 21, str_gc_content_characters, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 22, str_gc_content_percent, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
@@ -611,6 +622,7 @@ gboolean create_db_callback(gpointer user_data)
             "CREATE TABLE %s ("
             "id INTEGER PRIMARY KEY, "
             "filename TEXT, "
+            "file_header TEXT, "
             "hour TEXT, minute TEXT, "
             "day TEXT, month TEXT, "
             "year TEXT, a_count TEXT, "

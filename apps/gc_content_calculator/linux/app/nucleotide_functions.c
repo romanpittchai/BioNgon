@@ -40,6 +40,13 @@ void read_file(GtkWidget *widget, TObject *text_struct)
 
         gtk_text_buffer_insert_at_cursor(
             buffer, g_strdup_printf(
+                "File header: %s\n\n",
+                text_struct->header_buffer
+            ),
+        -1);
+
+        gtk_text_buffer_insert_at_cursor(
+            buffer, g_strdup_printf(
                 "Date of processing:\n%02d:%02d - %02d.%02d.%d\n\n",
                 now->tm_hour, now->tm_min,
                 now->tm_mday, now->tm_mon + 1, now->tm_year + 1900
@@ -58,7 +65,6 @@ void read_file(GtkWidget *widget, TObject *text_struct)
         }
 
         gc_percent(text_struct);
-
 
         gtk_text_buffer_insert_at_cursor(
             buffer, g_strdup_printf(
@@ -119,7 +125,6 @@ void gc_percent(TObject *text_struct)
     );
 }
 
-
 void percent_nucl(TObject *text_struct)
 {   // Search percent of nucleotides
 
@@ -135,11 +140,25 @@ void percent_nucl(TObject *text_struct)
 void count_dna(TObject *text_struct)
 {   // Counting dna
 
+    int in_header = 0;
+    size_t header_index = 0;
+
     while ((text_struct->bytesRead = fread(
         text_struct->buffer, 1, sizeof(text_struct->buffer),
         text_struct->file)) > 0) {
         for (size_t i = 0; i < text_struct->bytesRead; i++) {
-            if (text_struct->buffer[i] > 64 && text_struct->buffer[i] < 91) {
+            if (text_struct->buffer[i] == '>') {
+                in_header = 1;
+                header_index = 0;
+            }
+            else if (in_header && text_struct->buffer[i] == '\n') {
+                in_header = 0;
+                text_struct->header_buffer[header_index] = '\0';
+            }
+            else if (in_header) {
+                text_struct->header_buffer[header_index++] = text_struct->buffer[i];
+            }
+            else if (!in_header && text_struct->buffer[i] > 64 && text_struct->buffer[i] < 91) {
                 (text_struct->length_dna)++;
                 for (int j = 0; j < NUMBER_OF_NUCLEOTIDES; j++) {
                     if (text_struct->array_of_nucleotides[j] == text_struct->buffer[i]) {
@@ -151,9 +170,3 @@ void count_dna(TObject *text_struct)
         }
     }
 }
-
-
-
-
-
-

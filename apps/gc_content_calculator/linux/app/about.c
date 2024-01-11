@@ -11,7 +11,7 @@ void about_program(GtkWidget *widget,  TObject *text_struct)
     char about[1024];
     snprintf(
         about, sizeof(about),
-        "V. 1.01\n\n"
+        "V. 1.02\n\n"
         "\tThis is a simple program "
         "for counting nucleotides (GC content calculator)."
         "It is a freely distributed software. "

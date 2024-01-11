@@ -6,6 +6,7 @@
 
 #define NUMBER_OF_NUCLEOTIDES 5 // Number of nucleotides
 #define BUFFER_SIZE 8192 // BufferBuffer size
+#define MAX_HEADER_LENGTH 4096 // File header size
 
 // Basic working structure
 typedef struct SObject {
@@ -30,6 +31,7 @@ typedef struct SObject {
     char table_name[32];
     char path_to_interface[PATH_MAX];
     char path_to_db_dir[PATH_MAX];
+    char header_buffer[MAX_HEADER_LENGTH];
 } TObject;
 
 #endif // STRUCTURES_H_INCLUDED

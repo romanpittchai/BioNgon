@@ -1,4 +1,4 @@
-V. 1.01
+V. 1.02
 
 BioNgon - in the future, an expandable project, the task of which is to create simple, free tools for tasks related to biology and activities related to the field of biology. The project is developing and I hope it will benefit all those who are interested in this benefit. 
 Url - https://github.com/romanpittchai/BioNgon
@@ -7,7 +7,7 @@ You have downloaded the source code of a small program called GC Content Calcula
 
 And yes, you can delete the source folder and move the build folder to any location on your computer.
 
-The source folder also has the name of the test file "test_dna.txt ".
+The source folder also has the name of the test file "Homo_sapiens.GRCh38.dna.chromosome.1.fa"(the fragment).
 
 Additional dependencies are installed mainly from the operating system repository using "apt" or "apt-get" (in other versions of Linux, this can be done differently). For example, you will most likely have to install some libraries: "sudo apt-get install build-essential libgtk-3-dev" or "sudo apt-get install libcairo2-dev".
 
