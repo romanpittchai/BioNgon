@@ -1,11 +1,12 @@
 CC = gcc
-OBJ =  obj/main.o obj/DB.o obj/interface_functions.o obj/nucleotide_functions.o obj/sqlite3.o obj/util.o obj/about.o
+DIR_O = obj
+DIR_B = bin
+OBJ =  $(DIR_O)/main.o $(DIR_O)/DB.o $(DIR_O)/interface_functions.o $(DIR_O)/nucleotide_functions.o $(DIR_O)/sqlite3.o $(DIR_O)/util.o $(DIR_O)/about.o $(DIR_O)/graph.o
 FLAGS_OBJ = -c -Wall -Wextra `pkg-config --libs --cflags gtk+-3.0` -ldl -lpthread -o
 FLAGS_BIN = `pkg-config --libs --cflags gtk+-3.0` -ldl -lpthread
 GC = gc_content_calculator
 SH = run.sh
-DIR_O = obj
-DIR_B = bin
+
 
 all: $(GC)
 
@@ -32,6 +33,9 @@ $(DIR_O)/DB.o: DB.c structures.h util.h sqlite3.h
 	$(CC) $< $(FLAGS_OBJ) $@
 
 $(DIR_O)/interface_functions.o: interface_functions.c structures.h util.h 
+	$(CC) $< $(FLAGS_OBJ) $@
+	
+$(DIR_O)/graph.o: graph.c structures.h
 	$(CC) $< $(FLAGS_OBJ) $@
 
 $(DIR_O)/nucleotide_functions.o: nucleotide_functions.c structures.h util.h

@@ -8,7 +8,7 @@
 void about_program(GtkWidget *widget,  TObject *text_struct)
 {   // About the program
 
-    char about[1024];
+    char about[4096];
     snprintf(
         about, sizeof(about),
         "V. 1.02\n\n"
