@@ -25,6 +25,9 @@ gc_content_calculator.depend/
 .gc_content_calculator.depend
 /gc_content_calculator.depend/
 
+BioNgon/apps/gc_content_calculator/linux/GUI/gc_content_calculator/gc_content_calculator.layout
+BioNgon/apps/gc_content_calculator/linux/CLI/gc_content_calculator/target
+
 .depend
 depend
 /depend/
