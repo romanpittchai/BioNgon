@@ -63,7 +63,7 @@ impl NucleotideCounter {
         Ok(NucleotideCounter { file_path, filename, file_header, nucleatides, other_calc_nucleatides })
     }
 
-    pub fn read_nuacliotides(&mut self) -> Result<(), Box<dyn Error>> {
+    fn read_nuacliotides(&mut self) -> Result<(), Box<dyn Error>> {
         let file: File = File::open(&self.file_path)?;
         let reader: BufReader<File> = BufReader::with_capacity(8 * 1024, file);
     
@@ -98,11 +98,86 @@ impl NucleotideCounter {
         Ok(())
     }
 
-    pub fn count_other_nucleatides(&mut self) -> Result<(), Box<dyn Error>> {
+    fn count_other_nucleatides(&mut self) -> Result<(), Box<dyn Error>> {
+        let mut total_number_of_characters: u64 = 0;
+        for nucleatide in &self.nucleatides {
+            let count_vec: &&Vec<NucleotideCountType> = &nucleatide.1;
+            if let Some(NucleotideCountType::UnInt(value)) = count_vec.get(0) {
+                total_number_of_characters += value;
+            }
+        }
+
+        if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
+            "Total number of characters"
+        ) {
+            if let Some(NucleotideCountType::UnInt(total_count)) = count_vec.get_mut(0) {
+                *total_count = total_number_of_characters;
+            } else {
+                count_vec.push(NucleotideCountType::UnInt(total_number_of_characters));
+            }
+        }
+
+        let char_o: char = 'O';
+        let mut other_nucleatides: u64 = 0;
+        if let Some(count_vec) = self.other_calc_nucleatides.get_mut("Other characters") {
+            if let Some(count_vec_o) = self.nucleatides.get_mut(&char_o) {
+                if let Some(NucleotideCountType::UnInt(other_nucl)) = count_vec.get_mut(0) {
+                    if let Some(NucleotideCountType::UnInt(value)) = count_vec_o.get_mut(0) {
+                        *other_nucl = *value;
+                        other_nucleatides = *other_nucl;
+                    } else {
+                        count_vec.push(NucleotideCountType::UnInt(total_number_of_characters));
+                    }
+                }
+            }
+        }
+
+        if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
+            "Number of ATGCU"
+        ) {
+            if let Some(NucleotideCountType::UnInt(atgcu)) = count_vec.get_mut(0) {
+                *atgcu = total_number_of_characters - other_nucleatides;
+            }
+        }
+        
+        let nucleatides_list: [char; 2] = ['G', 'C'];
+        for nucleotide in &nucleatides_list {
+            if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
+                "Number of GC content in characters"
+            ) {
+                if let Some(NucleotideCountType::UnInt(gc_content)) = count_vec.get_mut(0) {
+                    if let Some(NucleotideCountType::UnInt(value)) = self.nucleatides.get(
+                        nucleotide
+                    ).and_then(|vec| vec.get(0)) {
+                        *gc_content += value;
+                    }
+                }
+            }
+        }
         Ok(())
     }
 
-    pub fn percentage_of_nucleotides(&mut self) -> Result<(), Box<dyn Error>> {
+    fn percentage_of_nucleotides(&mut self) -> Result<(), Box<dyn Error>> {
+        let mut total_number_of_characters: u64 = 0;
+        if let Some(count_vec) = self.other_calc_nucleatides.get_mut("Total number of characters") {
+            if let Some(NucleotideCountType::UnInt(total_count)) = count_vec.get_mut(0) {
+                total_number_of_characters = *total_count;
+            }
+        }
+
+        let mut gc_content: u64 = 0;
+        if let Some(count_vec) = self.other_calc_nucleatides.get_mut("Number of GC content in characters") {
+            if let Some(NucleotideCountType::UnInt(gc_nucl_content)) = count_vec.get_mut(0) {
+                gc_content = *gc_nucl_content;
+            }
+        }
+
+        if let Some(count_vec) = self.other_calc_nucleatides.get_mut("Number of GC content in characters") {
+            if let Some(NucleotideCountType::Float(gc_nucl_content_perc)) = count_vec.get_mut(1) {
+                *gc_nucl_content_perc = (((gc_content as f64) / (total_number_of_characters as f64)) * 100.0 * 100.0).round() / 100.0;
+            }
+        }
+
         Ok(())
     }
 } 
@@ -110,10 +185,11 @@ impl NucleotideCounter {
 
 pub fn run(mut config: NucleotideCounter) -> Result<(), Box<dyn Error>> {
     config.read_nuacliotides()?;
+    config.count_other_nucleatides()?;
+    config.percentage_of_nucleotides()?;
     dbg!(config.file_path);
     dbg!(config.filename);
     dbg!(config.file_header);
-    dbg!(config.nucleatides);
     dbg!(config.other_calc_nucleatides);
     Ok(())
 }
@@ -170,6 +246,7 @@ TAACCCTAACCCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACG";
     }
 
     config.read_nuacliotides()?;
+    config.count_other_nucleatides()?;
     let test_file_header: &str = "1 dna:chromosome chromosome:GRCh38:1:1:248956422:1 REF";
 
     assert_eq!(config.nucleatides.get(&'A').map(|v| v[0].clone()), Some(NucleotideCountType::UnInt(147)));
@@ -179,10 +256,10 @@ TAACCCTAACCCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACG";
     assert_eq!(config.nucleatides.get(&'U').map(|v| v[0].clone()), Some(NucleotideCountType::UnInt(0)));
     assert_eq!(config.nucleatides.get(&'O').map(|v| v[0].clone()), Some(NucleotideCountType::UnInt(34)));
 
-    assert_eq!(config.other_calc_nucleatides.get("Total number of characters"), Some(&vec![NucleotideCountType::UnInt(0), NucleotideCountType::Float(0.0)]));
-    assert_eq!(config.other_calc_nucleatides.get("Number of ATGCU"), Some(&vec![NucleotideCountType::UnInt(0), NucleotideCountType::Float(0.0)]));
-    assert_eq!(config.other_calc_nucleatides.get("Other characters"), Some(&vec![NucleotideCountType::UnInt(0), NucleotideCountType::Float(0.0)]));
-    assert_eq!(config.other_calc_nucleatides.get("Number of GC content in characters"), Some(&vec![NucleotideCountType::UnInt(0), NucleotideCountType::Float(0.0)]));
+    assert_eq!(config.other_calc_nucleatides.get("Total number of characters"), Some(&vec![NucleotideCountType::UnInt(475), NucleotideCountType::Float(0.0)]));
+    assert_eq!(config.other_calc_nucleatides.get("Number of ATGCU"), Some(&vec![NucleotideCountType::UnInt(441), NucleotideCountType::Float(0.0)]));
+    assert_eq!(config.other_calc_nucleatides.get("Other characters"), Some(&vec![NucleotideCountType::UnInt(34), NucleotideCountType::Float(0.0)]));
+    assert_eq!(config.other_calc_nucleatides.get("Number of GC content in characters"), Some(&vec![NucleotideCountType::UnInt(228), NucleotideCountType::Float(0.0)]));
     
     assert_eq!(config.file_header, test_file_header.to_string());
 
