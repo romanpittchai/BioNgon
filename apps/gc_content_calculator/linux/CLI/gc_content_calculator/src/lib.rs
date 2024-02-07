@@ -3,6 +3,7 @@ use std::error::Error;
 use std::path::Path;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use chrono::{DateTime, Datelike, Local, Timelike};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum NucleotideCountType {
@@ -14,11 +15,19 @@ pub struct NucleotideCounter {
     pub file_path: String,
     pub filename: String,
     pub file_header: String,
+    pub formatted_datetime: String,
     pub nucleatides: HashMap<char, Vec<NucleotideCountType>>,
     pub other_calc_nucleatides: HashMap<String, Vec<NucleotideCountType>>,
 }
 
 impl NucleotideCounter {
+    const NUCLEOTIDES_LIST: [char; 6] = ['A', 'C', 'G', 'T', 'U', 'O'];
+    const OTHER_PARAMETERS_NUCLEATIDE_CONST: [&'static str; 3] = [
+            "Total number of characters", "Number of ATGCU", 
+            "Number of GC content in characters"
+        ];
+    const NUCLEATIDES_LIST_GC: [char; 2] = ['G', 'C'];
+
     pub fn build(args: &[String]) -> Result<NucleotideCounter, &'static str> {
         if args.len() < 2 {
             return Err("Not enough arguments!");
@@ -35,24 +44,29 @@ impl NucleotideCounter {
         
         let file_header: String = String::from("Empty");
 
-        let nucleatides_list: [char; 6] = ['A', 'C', 'G', 'T', 'U', 'O'];
+        let current_datetime: DateTime<Local> = Local::now();
+        let formatted_datetime: String = format!(
+            "{:02}:{:02} - {:02}.{:02}.{}",
+            current_datetime.hour(),
+            current_datetime.minute(),
+            current_datetime.day(),
+            current_datetime.month(),
+            current_datetime.year(),
+        );
+
         let mut nucleatides: HashMap<char, Vec<NucleotideCountType>> = HashMap::new();
 
-        for nucleatide in nucleatides_list {
-            nucleatides.insert(nucleatide, vec![
+        for nucleatide in &Self::NUCLEOTIDES_LIST {
+            nucleatides.insert(*nucleatide, vec![
                 NucleotideCountType::UnInt(0), 
                 NucleotideCountType::Float(0.0)
                 ]
             );
         }
 
-        let other_parameters_nucleatide_count: [&str; 3] = [
-            "Total number of characters", "Number of ATGCU", 
-            "Number of GC content in characters"
-        ];
         let mut other_calc_nucleatides: HashMap<String, Vec<NucleotideCountType>> = HashMap::new();
 
-        for parameter in other_parameters_nucleatide_count {
+        for parameter in &Self::OTHER_PARAMETERS_NUCLEATIDE_CONST {
             other_calc_nucleatides.insert(parameter.to_string(), vec![
                 NucleotideCountType::UnInt(0), 
                 NucleotideCountType::Float(0.0)
@@ -60,7 +74,7 @@ impl NucleotideCounter {
             );
         }
 
-        Ok(NucleotideCounter { file_path, filename, file_header, nucleatides, other_calc_nucleatides })
+        Ok(NucleotideCounter { file_path, filename, file_header, formatted_datetime, nucleatides, other_calc_nucleatides })
     }
 
     fn read_nuacliotides(&mut self) -> Result<(), Box<dyn Error>> {
@@ -84,8 +98,9 @@ impl NucleotideCounter {
                         count_vec.push(NucleotideCountType::UnInt(1));
                     }
                 } else {
-                    let char_o: char = 'O';
-                    if let Some(count_vec_o) = self.nucleatides.get_mut(&char_o) {
+                    if let Some(count_vec_o) = self.nucleatides.get_mut(
+                        &Self::NUCLEOTIDES_LIST[5]
+                    ) {
                         if let Some(NucleotideCountType::UnInt(value)) = count_vec_o.get_mut(0) {
                             *value += 1;
                         } else {
@@ -108,7 +123,7 @@ impl NucleotideCounter {
         }
 
         if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
-            "Total number of characters"
+            Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[0]
         ) {
             if let Some(NucleotideCountType::UnInt(total_count)) = count_vec.get_mut(0) {
                 *total_count = total_number_of_characters;
@@ -118,24 +133,23 @@ impl NucleotideCounter {
         }
 
         let mut other_nucleatides: u64 = 0;
-        if let Some(count_vec) = self.nucleatides.get_mut(&'O') {
+        if let Some(count_vec) = self.nucleatides.get_mut(&Self::NUCLEOTIDES_LIST[5]) {
             if let Some(NucleotideCountType::UnInt(other_nucleatides_count)) = count_vec.get_mut(0) {
                 other_nucleatides = *other_nucleatides_count;
             }
         }
 
         if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
-            "Number of ATGCU"
+            Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[1]
         ) {
             if let Some(NucleotideCountType::UnInt(atgcu)) = count_vec.get_mut(0) {
                 *atgcu = total_number_of_characters - other_nucleatides;
             }
         }
         
-        let nucleatides_list: [char; 2] = ['G', 'C'];
-        for nucleotide in &nucleatides_list {
+        for nucleotide in &Self::NUCLEATIDES_LIST_GC {
             if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
-                "Number of GC content in characters"
+                Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[2]
             ) {
                 if let Some(NucleotideCountType::UnInt(gc_content)) = count_vec.get_mut(0) {
                     if let Some(NucleotideCountType::UnInt(value)) = self.nucleatides.get(
@@ -149,74 +163,84 @@ impl NucleotideCounter {
         Ok(())
     }
 
-    fn percentage_of_nucleotides(&mut self) -> Result<(), Box<dyn Error>> {
+    fn calc_percentages(args: (u64, u64)) -> f64 {
+        let (content, total) = args;
+        (((content as f64) / (total as f64)) * 100.0 * 100.0).round() / 100.0
+    }
+
+    fn percentage_of_nucleotides_and_output(&mut self) -> Result<(), Box<dyn Error>> {
+        println!();
+        println!("Filename: {}", &self.filename);
+        println!("---");
+        println!("File header: {}", &self.file_header);
+        println!("---");
+        println!("Date of processing: {}", &self.formatted_datetime);
+        println!("---");
         let mut total_number_of_characters: u64 = 0;
+        let mut total_number_of_characters_perc: f64 = 0.0;
         if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
-            "Total number of characters"
+            Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[0]
         ) {
             if let Some(NucleotideCountType::UnInt(total_count)) = count_vec.get_mut(0) {
                 total_number_of_characters = *total_count;
             }
             if let Some(NucleotideCountType::Float(total_count_perc)) = count_vec.get_mut(1) {
                 *total_count_perc = 100.0;
+                total_number_of_characters_perc = *total_count_perc;
             }
-        }
-
-        let mut gc_content: u64 = 0;
-        if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
-            "Number of GC content in characters"
-        ) {
-            if let Some(NucleotideCountType::UnInt(gc_nucl_content)) = count_vec.get_mut(0) {
-                gc_content = *gc_nucl_content;
-            }
-            if let Some(NucleotideCountType::Float(gc_nucl_content_perc)) = count_vec.get_mut(1) {
-                *gc_nucl_content_perc = ((
-                    (gc_content as f64) / (total_number_of_characters as f64)
-                ) * 100.0 * 100.0).round() / 100.0;
-            }
+            println!("Total number of characters {} - {}%", total_number_of_characters, total_number_of_characters_perc);
         }
         
         let mut atgcu: u64 = 0;
+        let mut atgcu_perc_c: f64 = 0.0;
         if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
-            "Number of ATGCU"
+            Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[1]
         ) {
             if let Some(NucleotideCountType::UnInt(atgcu_count)) = count_vec.get_mut(0) {
                 atgcu = *atgcu_count;
             }
             if let Some(NucleotideCountType::Float(actgu_perc)) = count_vec.get_mut(1) {
-                *actgu_perc = ((
-                    (atgcu as f64) / (total_number_of_characters as f64)
-                ) * 100.0 * 100.0).round() / 100.0;
+                *actgu_perc = Self::calc_percentages((atgcu, total_number_of_characters));
+                atgcu_perc_c = *actgu_perc;
             }
+            println!("Number of ATGCU {} - {}%", atgcu, atgcu_perc_c);
         }
 
-        let mut other_nucl: u64 = 0;
+        let mut gc_content: u64 = 0;
+        let mut gc_content_perc: f64 = 0.0;
         if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
-            "Other characters"
+            Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[2]
         ) {
-            if let Some(NucleotideCountType::UnInt(other_nucl_count)) = count_vec.get_mut(0) {
-                other_nucl = *other_nucl_count;
+            if let Some(NucleotideCountType::UnInt(gc_nucl_content)) = count_vec.get_mut(0) {
+                gc_content = *gc_nucl_content;
             }
-            if let Some(NucleotideCountType::Float(other_nucl_perc)) = count_vec.get_mut(1) {
-                *other_nucl_perc = ((
-                    (other_nucl as f64) / (total_number_of_characters as f64)
-                ) * 100.0 * 100.0).round() / 100.0;
+            if let Some(NucleotideCountType::Float(gc_nucl_content_perc)) = count_vec.get_mut(1) {
+                *gc_nucl_content_perc = Self::calc_percentages((gc_content, total_number_of_characters)); 
+                gc_content_perc = *gc_nucl_content_perc;
             }
+            println!("Number of GC content in characters {} - {}%", gc_content, gc_content_perc);
         }
-        let nucleatides_list: [char; 6] = ['A', 'C', 'G', 'T', 'U', 'O'];
+
         let mut nucleatide_count: u64 = 0;
-        for nucleatide in nucleatides_list {
+        let mut nucleatide_count_perc: f64 = 0.0;
+        for nucleatide in &Self::NUCLEOTIDES_LIST {
             if let Some(count_vec) = self.nucleatides.get_mut(&nucleatide) {
                 if let Some(NucleotideCountType::UnInt(value)) = count_vec.get_mut(0) {
                     nucleatide_count = *value;
                 }
                 if let Some(NucleotideCountType::Float(value)) = count_vec.get_mut(1) {
-                    *value = ((
-                        (nucleatide_count as f64) / (total_number_of_characters as f64)
-                    ) * 100.0 * 100.0).round() / 100.0;
+                    *value = Self::calc_percentages((nucleatide_count, total_number_of_characters));
+                    nucleatide_count_perc = *value;
+
+                }
+                if nucleatide == &Self::NUCLEOTIDES_LIST[5] {
+                    println!("Other characters - {} - {}%", nucleatide_count, nucleatide_count_perc);
+                } else {
+                    println!("{} - {} - {}%", nucleatide, nucleatide_count, nucleatide_count_perc);
                 }
             }
         }
+        println!();
 
         Ok(())
     }
@@ -226,12 +250,7 @@ impl NucleotideCounter {
 pub fn run(mut config: NucleotideCounter) -> Result<(), Box<dyn Error>> {
     config.read_nuacliotides()?;
     config.count_other_nucleatides()?;
-    config.percentage_of_nucleotides()?;
-    dbg!(config.file_path);
-    dbg!(config.filename);
-    dbg!(config.file_header);
-    dbg!(config.other_calc_nucleatides);
-    dbg!(config.nucleatides);
+    config.percentage_of_nucleotides_and_output()?;
     Ok(())
 }
 
@@ -257,10 +276,21 @@ TAACCCTAACCCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACG";
     let mut file: NamedTempFile = NamedTempFile::new()?;
     writeln!(file, "{}", contents)?;
 
+    let current_datetime: DateTime<Local> = Local::now();
+        let formatted_datetime: String = format!(
+            "{:02}:{:02} - {:02}.{:02}.{}",
+            current_datetime.hour(),
+            current_datetime.minute(),
+            current_datetime.day(),
+            current_datetime.month(),
+            current_datetime.year(),
+        );
+
     let mut config: NucleotideCounter = NucleotideCounter {
         file_path: file.path().to_string_lossy().into_owned(),
         filename: "test_filename".to_string(),
         file_header: "test_header".to_string(),
+        formatted_datetime: formatted_datetime,
         nucleatides: HashMap::new(),
         other_calc_nucleatides: HashMap::new(),
     };
@@ -273,9 +303,9 @@ TAACCCTAACCCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACG";
         );
     }
 
-    let other_parameters_nucleatide_count: [&str; 4] = [
+    let other_parameters_nucleatide_count: [&str; 3] = [
             "Total number of characters", "Number of ATGCU", 
-            "Other characters", "Number of GC content in characters"
+            "Number of GC content in characters"
         ];
 
     for parameter in other_parameters_nucleatide_count {
@@ -288,7 +318,7 @@ TAACCCTAACCCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACG";
 
     config.read_nuacliotides()?;
     config.count_other_nucleatides()?;
-    config.percentage_of_nucleotides()?;
+    config.percentage_of_nucleotides_and_output()?;
     let test_file_header: &str = "1 dna:chromosome chromosome:GRCh38:1:1:248956422:1 REF";
 
     assert_eq!(
