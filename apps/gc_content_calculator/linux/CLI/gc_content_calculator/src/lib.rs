@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use chrono::{DateTime, Datelike, Local, Timelike};
 
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum NucleotideCountType {
     UnInt(u64),
@@ -80,7 +81,8 @@ impl NucleotideCounter {
     fn read_nuacliotides(&mut self) -> Result<(), Box<dyn Error>> {
         let file: File = File::open(&self.file_path)?;
         let reader: BufReader<File> = BufReader::with_capacity(8 * 1024, file);
-    
+        let mut nucleotide_count_int: [u64; 6] = [0; 6];
+
         for line in reader.lines() {
             let sequence: String = line?;
             let header_symbol: char = '>';
@@ -90,22 +92,25 @@ impl NucleotideCounter {
                 continue;
             }
 
-            for c in sequence.chars() {
-                if let Some(count_vec) = self.nucleatides.get_mut(&c) {
+            for char in sequence.chars() {
+                let mut found_match: bool = false;
+                for i in 0..Self::NUCLEOTIDES_LIST.len() {
+                    if char == Self::NUCLEOTIDES_LIST[i] {
+                        nucleotide_count_int[i] += 1;
+                        found_match = true;
+                    }
+                }
+                if !found_match {
+                    nucleotide_count_int[5] += 1;
+                }
+            }
+            
+            for i in 0..Self::NUCLEOTIDES_LIST.len() {
+                if let Some(count_vec) = self.nucleatides.get_mut(&Self::NUCLEOTIDES_LIST[i]) {
                     if let Some(NucleotideCountType::UnInt(value)) = count_vec.get_mut(0) {
-                        *value += 1;
+                        *value = nucleotide_count_int[i];
                     } else {
                         count_vec.push(NucleotideCountType::UnInt(1));
-                    }
-                } else {
-                    if let Some(count_vec_o) = self.nucleatides.get_mut(
-                        &Self::NUCLEOTIDES_LIST[5]
-                    ) {
-                        if let Some(NucleotideCountType::UnInt(value)) = count_vec_o.get_mut(0) {
-                            *value += 1;
-                        } else {
-                            count_vec_o.push(NucleotideCountType::UnInt(1));
-                        }
                     }
                 }
             }
@@ -147,19 +152,33 @@ impl NucleotideCounter {
             }
         }
         
-        for nucleotide in &Self::NUCLEATIDES_LIST_GC {
-            if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
-                Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[2]
-            ) {
-                if let Some(NucleotideCountType::UnInt(gc_content)) = count_vec.get_mut(0) {
-                    if let Some(NucleotideCountType::UnInt(value)) = self.nucleatides.get(
-                        nucleotide
-                    ).and_then(|vec| vec.get(0)) {
-                        *gc_content += value;
-                    }
-                }
+        let mut gc_sum: [u64; 2] = [0; 2];
+        if let Some(count_vec) = self.nucleatides.get_mut(
+            &Self::NUCLEATIDES_LIST_GC[0]
+        ) {
+            if let Some(NucleotideCountType::UnInt(g)) = count_vec.get_mut(0) {
+                gc_sum[0] = *g;
             }
+            
         }
+
+        if let Some(count_vec) = self.nucleatides.get_mut(
+            &Self::NUCLEATIDES_LIST_GC[1]
+        ) {
+            if let Some(NucleotideCountType::UnInt(c)) = count_vec.get_mut(0) {
+                gc_sum[1] = *c;
+            }
+            
+        }
+
+        if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
+            Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[2]
+        ) { if let Some(NucleotideCountType::UnInt(gc)) = count_vec.get_mut(0) {
+                *gc = gc_sum.iter().sum();
+            }
+
+        }
+
         Ok(())
     }
 

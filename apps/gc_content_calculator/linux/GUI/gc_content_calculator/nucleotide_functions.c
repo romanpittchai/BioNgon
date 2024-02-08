@@ -115,8 +115,8 @@ void gc_percent(TObject *text_struct)
 {   // Search GC percent
 
     text_struct->gc_content =(
-        ((float)text_struct->array_number_of_nucleotides[2]
-        + (float)text_struct->array_number_of_nucleotides[3])
+        (text_struct->array_number_of_nucleotides[2]
+        + text_struct->array_number_of_nucleotides[3])
     );
     text_struct->gc_content_percent = (
         (((float)text_struct->array_number_of_nucleotides[2]
