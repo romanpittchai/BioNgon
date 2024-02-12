@@ -315,12 +315,14 @@ pub fn run(mut config: NucleotideCounter) -> Result<(), Box<dyn Error>> {
 
 #[cfg(test)]
 mod tests {
+    // The test module.
     use super::*;
     use tempfile::{NamedTempFile, TempPath};
     use std::io::Write;
 
     #[test]
-    fn run_nucleatides() -> Result<(), Box<dyn Error>>{
+    fn run_nucleatides() -> Result<(), Box<dyn Error>> {
+        // Checking the correct nucleotide count.
         let contents: &str = "\
 >1 dna:chromosome chromosome:GRCh38:1:1:248956422:1 REF
 NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNTAACCCTAACCCTAACCCTA
