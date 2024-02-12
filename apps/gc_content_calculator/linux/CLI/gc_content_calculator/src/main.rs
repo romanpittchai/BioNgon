@@ -4,8 +4,11 @@ use std::process::{self};
 use gc_content_calculator::NucleotideCounter;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let config: NucleotideCounter = NucleotideCounter::build(&args).unwrap_or_else(|err: &str| {
+    // Parse the command line arguments and create 
+    // an instance of NucleotideCounter.
+    let config: NucleotideCounter = NucleotideCounter::build(env::args())
+        .unwrap_or_else(
+            |err: &str| {
         eprintln!("Problem parsing arguments: {err}");
         process::exit(1);
     });
