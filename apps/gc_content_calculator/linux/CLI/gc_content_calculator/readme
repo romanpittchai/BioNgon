@@ -1,0 +1,6 @@
+V. 1.01
+
+BioNgon - in the future, an expandable project, the task of which is to create simple, free tools for tasks related to biology and activities related to the field of biology. The project is developing and I hope it will benefit all those who are interested in this benefit. 
+Url - https://github.com/romanpittchai/BioNgon
+
+You have downloaded the source code of a small program called GC Content Calculator. Perhaps everything in this program is not so perfect, but once you have downloaded it, it means that you need it. The program is written in the Rust programming language. It is one of the best programming languages today. At the moment, the program is a console version. It just reads the data and outputs it to the console. Later, it is planned to add work with databases, text data and graph rendering. In order to use the program (at the moment), you will need to download the source code to your PC, then go to the official Rust website, install the compiler. After that, you can go to the source code folder and type "cargo build --release" in the terminal (without quotes). And in the target/release folder you will find a binary file. you can drag it anywhere and open it like this ./gc_content_calculator <and the file path>. You can also add the program to the path.
