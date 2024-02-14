@@ -1,24 +1,11 @@
 //! # GC Content Calculator
 //! 
-//! A library for counting nucleatides. It is used for files in the FASTA format.
+//! A library for counting nucleatides. 
+//! It is used for files in the FASTA format.
 
 use std::error::Error;
-pub use self::types_of_summary_data::NucleotideCountType;
-pub use self::creation_and_counting::NucleotideCounter;
+pub use self::creation_and_counting::{NucleotideCounter, NucleotideCountType};
 
-pub mod types_of_summary_data {
-    //! # Types of summary data
-    //! 
-    //! The module in which the enumeration is 
-    //! located is designed to store calculated data.
-
-    /// Enum representing different types of nucleotide count values.
-    #[derive(Debug, Clone, PartialEq)]
-    pub enum NucleotideCountType {
-        UnInt(u64),
-        Float(f64),
-    }
-}
 
 pub mod creation_and_counting {
     //! # Creation and counting
@@ -38,7 +25,13 @@ pub mod creation_and_counting {
         io::{BufRead, BufReader}
     };
     use chrono::{DateTime, Datelike, Local, Timelike};
-    use crate::types_of_summary_data::*;
+
+    /// Enum representing different types of nucleotide count values.
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum NucleotideCountType {
+        UnInt(u64),
+        Float(f64),
+    }
 
     /// A structure representing the nucleotide occurrence counter. 
     /// It also stores the path to the file, the file name, 
