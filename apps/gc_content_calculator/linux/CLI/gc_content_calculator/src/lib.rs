@@ -156,14 +156,11 @@ pub mod creation_and_counting {
                 let struct_counter: Arc<Mutex<NucleotideCounter>> = Arc::clone(
                     &nucleotides_counter
                 );
-                let nucleotide_count_int_clone: Arc<Mutex<[u64; 6]>> = Arc::clone(
+                let counter: Arc<Mutex<[u64; 6]>> = Arc::clone(
                     &nucleotide_count_int
                 );
                 
                 let handle = thread::spawn(move || {
-                    let counter: Arc<Mutex<[u64; 6]>> = Arc::clone(
-                        &nucleotide_count_int_clone
-                    );
                     let mut struct_counter: MutexGuard<'_, NucleotideCounter> = struct_counter.lock().unwrap(); 
                     for line in lines_chunk {
                         let sequence: String = line.to_string();
