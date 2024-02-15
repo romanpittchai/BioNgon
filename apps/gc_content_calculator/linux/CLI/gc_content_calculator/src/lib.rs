@@ -160,7 +160,7 @@ pub mod creation_and_counting {
                     &nucleotide_count_int
                 );
                 
-                let handle = thread::spawn(move || {
+                let handle: JoinHandle<()> = thread::spawn(move || {
                     let mut struct_counter: MutexGuard<'_, NucleotideCounter> = struct_counter.lock().unwrap(); 
                     for line in lines_chunk {
                         let sequence: String = line.to_string();
@@ -196,13 +196,19 @@ pub mod creation_and_counting {
 
             let counter: MutexGuard<'_, [u64; 6]> = nucleotide_count_int.lock().unwrap();
             for i in 0..Self::NUCLEOTIDES_LIST.len() {
-                if let Some(count_vec) = self.nucleatides.get_mut(
+                if let Some(
+                    count_vec
+                ) = self.nucleatides.get_mut(
                     &Self::NUCLEOTIDES_LIST[i]
                 ) {
-                    if let Some(NucleotideCountType::UnInt(value)) = count_vec.get_mut(0) {
+                    if let Some(
+                        NucleotideCountType::UnInt(value)
+                    ) = count_vec.get_mut(0) {
                         *value = counter[i];
                     } else {
-                        count_vec.push(NucleotideCountType::UnInt(1));
+                        count_vec.push(
+                            NucleotideCountType::UnInt(1)
+                        );
                     }
                 }
             };
@@ -213,18 +219,26 @@ pub mod creation_and_counting {
             // Counts additional nucleotides and updates the counts.
             let mut total_number_of_characters: u64 = 0;
             for nucleotide in &self.nucleatides {
-                if let Some(NucleotideCountType::UnInt(value)) = nucleotide.1.get(0) {
+                if let Some(
+                    NucleotideCountType::UnInt(value)
+                ) = nucleotide.1.get(0) {
                     total_number_of_characters += value;
                 }
             }
 
-            if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
+            if let Some(
+                count_vec
+            ) = self.other_calc_nucleatides.get_mut(
                 Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[0]
             ) {
-                if let Some(NucleotideCountType::UnInt(total_count)) = count_vec.get_mut(0) {
+                if let Some(
+                    NucleotideCountType::UnInt(total_count)
+                ) = count_vec.get_mut(0) {
                     *total_count = total_number_of_characters;
                 } else {
-                    count_vec.push(NucleotideCountType::UnInt(total_number_of_characters));
+                    count_vec.push(
+                        NucleotideCountType::UnInt(total_number_of_characters)
+                    );
                 }
             }
 
@@ -239,28 +253,40 @@ pub mod creation_and_counting {
                 }
             }
 
-            if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
+            if let Some(
+                count_vec
+            ) = self.other_calc_nucleatides.get_mut(
                 Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[1]
             ) {
-                if let Some(NucleotideCountType::UnInt(atgcu)) = count_vec.get_mut(0) {
+                if let Some(
+                    NucleotideCountType::UnInt(atgcu)
+                ) = count_vec.get_mut(0) {
                     *atgcu = total_number_of_characters - other_nucleatides;
                 }
             }
             
             let mut gc_sum: [u64; 2] = [0; 2];
             for i in 0..gc_sum.len() {
-                if let Some(count_vec) = self.nucleatides.get(
+                if let Some(
+                    count_vec
+                ) = self.nucleatides.get(
                     &Self::NUCLEATIDES_LIST_GC[i]
                 ) {
-                    if let Some(NucleotideCountType::UnInt(gc)) = count_vec.get(0) {
+                    if let Some(
+                        NucleotideCountType::UnInt(gc)
+                    ) = count_vec.get(0) {
                         gc_sum[i] = *gc;
                     } 
                 }
             }
 
-            if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
+            if let Some(
+                count_vec
+            ) = self.other_calc_nucleatides.get_mut(
                 Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[2]
-            ) { if let Some(NucleotideCountType::UnInt(gc)) = count_vec.get_mut(0) {
+            ) { if let Some(
+                NucleotideCountType::UnInt(gc)
+            ) = count_vec.get_mut(0) {
                     *gc = gc_sum.iter().sum();
                 }
             }
@@ -290,13 +316,19 @@ pub mod creation_and_counting {
             let mut total_number_of_characters: u64 = 0;
             let mut total_number_of_characters_perc: f64 = 0.0;
             
-            if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
+            if let Some(
+                count_vec
+            ) = self.other_calc_nucleatides.get_mut(
                 Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[0]
             ) {
-                if let Some(NucleotideCountType::UnInt(total_count)) = count_vec.get_mut(0) {
+                if let Some(
+                    NucleotideCountType::UnInt(total_count)
+                ) = count_vec.get_mut(0) {
                     total_number_of_characters = *total_count;
                 }
-                if let Some(NucleotideCountType::Float(total_count_perc)) = count_vec.get_mut(1) {
+                if let Some(
+                    NucleotideCountType::Float(total_count_perc)
+                ) = count_vec.get_mut(1) {
                     *total_count_perc = 100.0;
                     total_number_of_characters_perc = *total_count_perc;
                 }
@@ -309,14 +341,22 @@ pub mod creation_and_counting {
             
             let mut atgcu: u64 = 0;
             let mut atgcu_perc_c: f64 = 0.0;
-            if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
+            if let Some(
+                count_vec
+            ) = self.other_calc_nucleatides.get_mut(
                 Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[1]
             ) {
-                if let Some(NucleotideCountType::UnInt(atgcu_count)) = count_vec.get_mut(0) {
+                if let Some(
+                    NucleotideCountType::UnInt(atgcu_count)
+                ) = count_vec.get_mut(0) {
                     atgcu = *atgcu_count;
                 }
-                if let Some(NucleotideCountType::Float(actgu_perc)) = count_vec.get_mut(1) {
-                    *actgu_perc = Self::calc_percentages((atgcu, total_number_of_characters));
+                if let Some(
+                    NucleotideCountType::Float(actgu_perc)
+                ) = count_vec.get_mut(1) {
+                    *actgu_perc = Self::calc_percentages(
+                        (atgcu, total_number_of_characters)
+                    );
                     atgcu_perc_c = *actgu_perc;
                 }
                 println!("Number of ATGCU {} - {}%", atgcu, atgcu_perc_c);
@@ -324,14 +364,22 @@ pub mod creation_and_counting {
 
             let mut gc_content: u64 = 0;
             let mut gc_content_perc: f64 = 0.0;
-            if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
+            if let Some(
+                count_vec
+            ) = self.other_calc_nucleatides.get_mut(
                 Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[2]
             ) {
-                if let Some(NucleotideCountType::UnInt(gc_nucl_content)) = count_vec.get_mut(0) {
+                if let Some(
+                    NucleotideCountType::UnInt(gc_nucl_content)
+                ) = count_vec.get_mut(0) {
                     gc_content = *gc_nucl_content;
                 }
-                if let Some(NucleotideCountType::Float(gc_nucl_content_perc)) = count_vec.get_mut(1) {
-                    *gc_nucl_content_perc = Self::calc_percentages((gc_content, total_number_of_characters)); 
+                if let Some(
+                    NucleotideCountType::Float(gc_nucl_content_perc)
+                ) = count_vec.get_mut(1) {
+                    *gc_nucl_content_perc = Self::calc_percentages(
+                        (gc_content, total_number_of_characters)
+                    ); 
                     gc_content_perc = *gc_nucl_content_perc;
                 }
                 println!(
@@ -343,12 +391,20 @@ pub mod creation_and_counting {
             let mut nucleatide_count: u64 = 0;
             let mut nucleatide_count_perc: f64 = 0.0;
             for nucleatide in &Self::NUCLEOTIDES_LIST {
-                if let Some(count_vec) = self.nucleatides.get_mut(&nucleatide) {
-                    if let Some(NucleotideCountType::UnInt(value)) = count_vec.get_mut(0) {
+                if let Some(
+                    count_vec
+                ) = self.nucleatides.get_mut(&nucleatide) {
+                    if let Some(
+                        NucleotideCountType::UnInt(value)
+                    ) = count_vec.get_mut(0) {
                         nucleatide_count = *value;
                     }
-                    if let Some(NucleotideCountType::Float(value)) = count_vec.get_mut(1) {
-                        *value = Self::calc_percentages((nucleatide_count, total_number_of_characters));
+                    if let Some(
+                        NucleotideCountType::Float(value)
+                    ) = count_vec.get_mut(1) {
+                        *value = Self::calc_percentages(
+                            (nucleatide_count, total_number_of_characters)
+                        );
                         nucleatide_count_perc = *value;
 
                     }
