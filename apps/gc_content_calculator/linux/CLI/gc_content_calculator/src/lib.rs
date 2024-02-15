@@ -20,9 +20,10 @@ pub mod creation_and_counting {
     //! 5. The "_percentage_of_nucleotides_and_output_" - method is used to calculate percentages 
     //! and output data to the console.
     use std::{
-        error::Error, collections::HashMap,
-        path::Path, fs::File, 
-        io::{BufRead, BufReader}
+        collections::HashMap, error::Error, 
+        fs::File, io::{BufRead, BufReader}, 
+        path::Path, sync::{Arc, Mutex, MutexGuard}, 
+        thread::{self, JoinHandle},
     };
     use chrono::{DateTime, Datelike, Local, Timelike};
 
@@ -36,6 +37,8 @@ pub mod creation_and_counting {
     /// A structure representing the nucleotide occurrence counter. 
     /// It also stores the path to the file, the file name, 
     /// the file header and the file processing time.
+    
+    #[derive(Debug, Clone)]
     pub struct NucleotideCounter {
         /// _Path to the file being processed._
         pub file_path: String,
@@ -58,6 +61,9 @@ pub mod creation_and_counting {
                 "Number of GC content in characters"
             ];
         const NUCLEATIDES_LIST_GC: [char; 2] = ['G', 'C'];
+        const NUM_THREADS: usize = 2;
+        const LEN_BUF: usize = 8;
+        const LEN_BUF_KW: usize = 1024;
 
         pub fn build(mut args: impl Iterator<Item = String>) -> Result<NucleotideCounter, &'static str> {
             // Constructs a new `NucleotideCounter` instance based on command line arguments.
@@ -71,7 +77,7 @@ pub mod creation_and_counting {
             let filename: String = if let Some(file_name) = path.file_name() {
                 file_name.to_str().unwrap_or_default().to_string()
             } else {
-                String::new()
+                String::from("Empty")
             };
             let file_path: String = file_path.to_string();
             
@@ -117,40 +123,92 @@ pub mod creation_and_counting {
         pub fn read_nuacliotides(&mut self) -> Result<(), Box<dyn Error>> {
             // Reads nucleotides from a file and updates the nucleotide counts.
             let file: File = File::open(&self.file_path)?;
-            let reader: BufReader<File> = BufReader::with_capacity(8 * 1024, file);
-            let mut nucleotide_count_int: [u64; 6] = [0; 6];
+            let reader: BufReader<File> = BufReader::with_capacity(
+                Self::LEN_BUF * Self::LEN_BUF_KW, file
+            );
 
-            for line in reader.lines() {
-                let sequence: String = line?;
-
-                if sequence.starts_with('>') {
-                    self.file_header = sequence.chars().skip(1).collect();
-                    continue;
+            let lines: Result<Vec<String>, std::io::Error> = reader.lines().collect();
+            let lines: Vec<String> = lines.map_err(
+                |e| {
+                    eprintln!("Error reading lines: {}", e); 
+                    e
                 }
+            )?;
+            let chunk_size: usize = lines.len() / Self::NUM_THREADS;
 
-                for char in sequence.chars() {
-                    let mut found_match: bool = false;
-                    for i in 0..Self::NUCLEOTIDES_LIST.len() {
-                        if char == Self::NUCLEOTIDES_LIST[i] {
-                            nucleotide_count_int[i] += 1;
-                            found_match = true;
-                        }
-                    }
-                    if !found_match {
-                        nucleotide_count_int[5] += 1;
-                    }
-                }
+            let nucleotides_counter: Arc<Mutex<Self>> = Arc::new(
+                Mutex::new(self.clone())
+            );
+            let mut handles: Vec<JoinHandle<()>> = vec![];
+            let nucleotide_count_int: Arc<Mutex<[u64; 6]>> = Arc::new(
+                Mutex::new([0; 6])
+            );
+
+            for i in 0..Self::NUM_THREADS {
+                let start: usize = i * chunk_size;
+                let end: usize = if i == Self::NUM_THREADS - 1 {
+                    lines.len()
+                } else {
+                    (i + 1) * chunk_size
+                };
+
+                let lines_chunk: Vec<String>= lines[start..end].to_vec();
+                let struct_counter: Arc<Mutex<NucleotideCounter>> = Arc::clone(
+                    &nucleotides_counter
+                );
+                let nucleotide_count_int_clone: Arc<Mutex<[u64; 6]>> = Arc::clone(
+                    &nucleotide_count_int
+                );
                 
-                for i in 0..Self::NUCLEOTIDES_LIST.len() {
-                    if let Some(count_vec) = self.nucleatides.get_mut(&Self::NUCLEOTIDES_LIST[i]) {
-                        if let Some(NucleotideCountType::UnInt(value)) = count_vec.get_mut(0) {
-                            *value = nucleotide_count_int[i];
-                        } else {
-                            count_vec.push(NucleotideCountType::UnInt(1));
+                let handle = thread::spawn(move || {
+                    let counter: Arc<Mutex<[u64; 6]>> = Arc::clone(
+                        &nucleotide_count_int_clone
+                    );
+                    let mut struct_counter: MutexGuard<'_, NucleotideCounter> = struct_counter.lock().unwrap(); 
+                    for line in lines_chunk {
+                        let sequence: String = line.to_string();
+                        if sequence.starts_with('>') {
+                            struct_counter.file_header = sequence.chars().skip(1).collect();
+                            continue;
+                        }
+
+                        for char in sequence.chars() {
+                            let mut found_match: bool = false;
+                            for i in 0..Self::NUCLEOTIDES_LIST.len() {
+                                if char == Self::NUCLEOTIDES_LIST[i] {
+                                    let mut counter: MutexGuard<'_, [u64; 6]> = counter.lock().unwrap();
+                                    counter[i] += 1;
+                                    found_match = true;
+                                }
+                            }
+                            if !found_match {
+                                let mut counter: MutexGuard<'_, [u64; 6]> = counter.lock().unwrap();
+                                counter[5] += 1;
+                            }
                         }
                     }
-                }
+                });
+                handles.push(handle);
             }
+            for handle in handles {
+                handle.join().unwrap();
+            }
+
+            let struct_counter: MutexGuard<'_, NucleotideCounter> = nucleotides_counter.lock().unwrap();
+            self.file_header = struct_counter.file_header.clone();
+
+            let counter: MutexGuard<'_, [u64; 6]> = nucleotide_count_int.lock().unwrap();
+            for i in 0..Self::NUCLEOTIDES_LIST.len() {
+                if let Some(count_vec) = self.nucleatides.get_mut(
+                    &Self::NUCLEOTIDES_LIST[i]
+                ) {
+                    if let Some(NucleotideCountType::UnInt(value)) = count_vec.get_mut(0) {
+                        *value = counter[i];
+                    } else {
+                        count_vec.push(NucleotideCountType::UnInt(1));
+                    }
+                }
+            };
             Ok(())
         }
 
@@ -175,8 +233,12 @@ pub mod creation_and_counting {
             }
 
             let mut other_nucleatides: u64 = 0;
-            if let Some(count_vec) = self.nucleatides.get(&Self::NUCLEOTIDES_LIST[5]) {
-                if let Some(NucleotideCountType::UnInt(other_nucleatides_count)) = count_vec.get(0) {
+            if let Some(count_vec) = self.nucleatides.get(
+                &Self::NUCLEOTIDES_LIST[5]
+            ) {
+                if let Some(
+                    NucleotideCountType::UnInt(other_nucleatides_count)
+                ) = count_vec.get(0) {
                     other_nucleatides = *other_nucleatides_count;
                 }
             }
@@ -222,6 +284,7 @@ pub mod creation_and_counting {
             // Calculates the percentage of nucleotides and outputs the results.
             let border_line_snowflake: String = "*".repeat(25);
             let border_line_dash: String = "-".repeat(25);
+
             println!();
             println!("{}", border_line_snowflake);
             println!("Filename: {}", &self.filename);
@@ -230,8 +293,10 @@ pub mod creation_and_counting {
             println!("{}", border_line_dash);
             println!("Date of processing: {}", &self.formatted_datetime);
             println!("{}", border_line_dash);
+
             let mut total_number_of_characters: u64 = 0;
             let mut total_number_of_characters_perc: f64 = 0.0;
+            
             if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
                 Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[0]
             ) {
