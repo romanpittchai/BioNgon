@@ -218,7 +218,6 @@ pub mod creation_and_counting {
                 }
             }
 
-
             if let Some(count_vec) = self.other_calc_nucleatides.get_mut(
                 Self::OTHER_PARAMETERS_NUCLEATIDE_CONST[0]
             ) {
@@ -255,8 +254,7 @@ pub mod creation_and_counting {
                 ) {
                     if let Some(NucleotideCountType::UnInt(gc)) = count_vec.get(0) {
                         gc_sum[i] = *gc;
-                    }
-                    
+                    } 
                 }
             }
 
@@ -265,9 +263,7 @@ pub mod creation_and_counting {
             ) { if let Some(NucleotideCountType::UnInt(gc)) = count_vec.get_mut(0) {
                     *gc = gc_sum.iter().sum();
                 }
-
             }
-
             Ok(())
         }
 
@@ -452,7 +448,7 @@ TAACCCTAACCCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACG";
         );
     }
 
-    let other_parameters_nucleatide_count: [&str; 3] = [
+    let other_parameters_nucleatide_count: [&'static str; 3] = [
             "Total number of characters", "Number of ATGCU", 
             "Number of GC content in characters"
         ];
@@ -468,7 +464,8 @@ TAACCCTAACCCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACG";
     config.read_nuacliotides()?;
     config.count_other_nucleatides()?;
     config.percentage_of_nucleotides_and_output()?;
-    let test_file_header: &str = "1 dna:chromosome chromosome:GRCh38:1:1:248956422:1 REF";
+    let test_file_header: &'static str = 
+        "1 dna:chromosome chromosome:GRCh38:1:1:248956422:1 REF";
 
     assert_eq!(
         config.nucleatides.get(&'A'), 
