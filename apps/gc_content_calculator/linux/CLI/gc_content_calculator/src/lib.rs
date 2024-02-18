@@ -67,21 +67,18 @@ pub mod creation_and_counting {
         const LEN_BUF: usize = 8;
         const LEN_BUF_KW: usize = 1024;
 
-        pub fn get_nucleatides(
+        pub fn get_nucleatides(&self, key: char) -> Option<&Vec<NucleotideCountType>> {
             // Data access functions without
             // changing the data itself. For tests.
-            &self,
-            key: char,
-        ) -> Option<&Vec<NucleotideCountType>> {
             self.nucleatides.get(&key)
         }
 
         pub fn get_other_calc_nucleatides(
-            // Data access functions without
-            // changing the data itself. For tests.
             &self,
             key: &'static str,
         ) -> Option<&Vec<NucleotideCountType>> {
+            // Data access functions without
+            // changing the data itself. For tests.
             self.other_calc_nucleatides.get(key)
         }
 
