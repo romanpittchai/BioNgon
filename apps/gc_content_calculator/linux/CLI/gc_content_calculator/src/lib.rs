@@ -19,6 +19,7 @@ pub mod creation_and_counting {
     //! 5. The "_percentage_of_nucleotides_and_output_" - method is used to calculate percentages
     //! and output data to the console.
     use chrono::{DateTime, Datelike, Local, Timelike};
+    use rayon::prelude::*;
     use std::{
         collections::HashMap,
         error::Error,
@@ -26,7 +27,6 @@ pub mod creation_and_counting {
         io::{BufRead, BufReader},
         path::Path,
         sync::{Arc, Mutex, MutexGuard},
-        thread::{self, JoinHandle},
     };
 
     /// Enum representing different types of nucleotide count values.
@@ -64,7 +64,6 @@ pub mod creation_and_counting {
             "Number of GC content in characters",
         ];
         const NUCLEATIDES_LIST_GC: [char; 2] = ['G', 'C'];
-        const NUM_THREADS: usize = 2;
         const LEN_BUF: usize = 8;
         const LEN_BUF_KW: usize = 1024;
 
@@ -107,11 +106,11 @@ pub mod creation_and_counting {
             let filename: String = if let Some(file_name) = path.file_name() {
                 file_name.to_str().unwrap_or_default().to_string()
             } else {
-                String::from("Empty")
+                String::new()
             };
             let file_path: String = file_path.to_string();
 
-            let file_header: String = String::from("Empty");
+            let file_header: String = String::new();
 
             let current_datetime: DateTime<Local> = Local::now();
             let formatted_datetime: String = format!(
@@ -164,66 +163,32 @@ pub mod creation_and_counting {
             let reader: BufReader<File> =
                 BufReader::with_capacity(Self::LEN_BUF * Self::LEN_BUF_KW, file);
 
-            let lines: Result<Vec<String>, std::io::Error> = reader.lines().collect();
-            let lines: Vec<String> = lines.map_err(|e| {
-                eprintln!("Error reading lines: {}", e);
-                e
-            })?;
-            let chunk_size: usize = lines.len() / Self::NUM_THREADS;
+            let lines: Vec<String> = reader.lines().collect::<Result<_, _>>()?;
 
-            let nucleotides_counter: Arc<Mutex<Self>> = Arc::new(Mutex::new(self.clone()));
-            let mut handles: Vec<JoinHandle<()>> = vec![];
+            let header_line: Option<&str> = lines.get(0).map(|line| line.trim());
+            if let Some(header) = header_line {
+                if header.starts_with('>') {
+                    self.file_header = header.chars().skip(1).collect();
+                }
+            }
+
             let nucleotide_count_int: Arc<Mutex<[u64; 6]>> = Arc::new(Mutex::new([0; 6]));
+            let data_lines: &[String] = if header_line.is_some() {
+                &lines[1..]
+            } else {
+                &lines
+            };
 
-            for i in 0..Self::NUM_THREADS {
-                let start: usize = i * chunk_size;
-                let end: usize = if i == Self::NUM_THREADS - 1 {
-                    lines.len()
-                } else {
-                    (i + 1) * chunk_size
-                };
-
-                let lines_chunk: Vec<String> = lines[start..end].to_vec();
-                let struct_counter: Arc<Mutex<NucleotideCounter>> =
-                    Arc::clone(&nucleotides_counter);
-                let counter: Arc<Mutex<[u64; 6]>> = Arc::clone(&nucleotide_count_int);
-
-                let handle: JoinHandle<()> = thread::spawn(move || {
-                    let mut struct_counter: MutexGuard<'_, NucleotideCounter> =
-                        struct_counter.lock().unwrap();
-                    for line in lines_chunk {
-                        let sequence: String = line.to_string();
-                        if sequence.starts_with('>') {
-                            struct_counter.file_header = sequence.chars().skip(1).collect();
-                            continue;
-                        }
-
-                        for char in sequence.chars() {
-                            let mut found_match: bool = false;
-                            for i in 0..Self::NUCLEOTIDES_LIST.len() {
-                                if char == Self::NUCLEOTIDES_LIST[i] {
-                                    let mut counter: MutexGuard<'_, [u64; 6]> =
-                                        counter.lock().unwrap();
-                                    counter[i] += 1;
-                                    found_match = true;
-                                }
-                            }
-                            if !found_match {
-                                let mut counter: MutexGuard<'_, [u64; 6]> = counter.lock().unwrap();
-                                counter[5] += 1;
-                            }
-                        }
+            data_lines.par_iter().for_each(|line| {
+                let mut counter: MutexGuard<'_, [u64; 6]> = nucleotide_count_int.lock().unwrap();
+                for char in line.chars() {
+                    if let Some(index) = Self::NUCLEOTIDES_LIST.iter().position(|&n| n == char) {
+                        counter[index] += 1;
+                    } else {
+                        counter[5] += 1;
                     }
-                });
-                handles.push(handle);
-            }
-            for handle in handles {
-                handle.join().unwrap();
-            }
-
-            let struct_counter: MutexGuard<'_, NucleotideCounter> =
-                nucleotides_counter.lock().unwrap();
-            self.file_header = struct_counter.file_header.clone();
+                }
+            });
 
             let counter: MutexGuard<'_, [u64; 6]> = nucleotide_count_int.lock().unwrap();
             for i in 0..Self::NUCLEOTIDES_LIST.len() {
@@ -231,7 +196,7 @@ pub mod creation_and_counting {
                     if let Some(NucleotideCountType::UnInt(value)) = count_vec.get_mut(0) {
                         *value = counter[i];
                     } else {
-                        count_vec.push(NucleotideCountType::UnInt(1));
+                        count_vec.push(NucleotideCountType::UnInt(counter[i]));
                     }
                 }
             }

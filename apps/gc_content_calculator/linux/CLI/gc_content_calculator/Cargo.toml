@@ -7,3 +7,4 @@ edition = "2021"
 [dependencies]
 tempfile = "3.9"
 chrono = { version = "0.4", features = ["serde"] }
+rayon = "1.5"
